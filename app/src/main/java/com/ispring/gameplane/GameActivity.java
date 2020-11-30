@@ -1,19 +1,30 @@
 package com.ispring.gameplane;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
 
+import com.baidu.duer.botvoiceapi.BotSpeechRecog;
+import com.baidu.duer.botvoiceapi.ISpeechTranscriberResultListener;
+import com.baidu.duer.speech.soundspec.SpecResult;
 import com.ispring.gameplane.game.GameView;
 
 
-public class GameActivity extends Activity {
+public class GameActivity extends Activity implements GameViewStateMonitor, ISpeechTranscriberResultListener {
 
     private GameView gameView;
+    public static final String TAG = "GameActivity";
+    private TextView speechResult;
+    private long lastRecognizeTimestamp = 0;
+    private boolean isRecognization = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+        speechResult = findViewById(R.id.speech_recognize_result);
         gameView = (GameView)findViewById(R.id.gameView);
         //0:combatAircraft
         //1:explosion
@@ -59,5 +70,75 @@ public class GameActivity extends Activity {
             gameView.destroy();
         }
         gameView = null;
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        BotSpeechRecog.getInstance().init(getApplicationContext());
+        boolean setLevelSuccess = BotSpeechRecog.getInstance().setLevel(BotSpeechRecog.Level.P1_VOICE_API);
+        BotSpeechRecog.getInstance().setSpeechResultListener(this);
+        boolean recordingSuccess = BotSpeechRecog.getInstance().startRecording();
+        if (setLevelSuccess && recordingSuccess) {
+            Log.i(TAG, "init bot speech recognize success");
+        } else {
+            Log.e(TAG, "init bot speech recognize fail");
+        }
+        BotSpeechRecog.getInstance().startRecognition();
+        gameView.setGameViewStateMonitor(this);
+    }
+
+    @Override
+    public void onGameStarted() {
+        Log.i(TAG, "on game started and start recogniztion");
+        if (!isRecognization) {
+            isRecognization = true;
+        }
+    }
+
+    @Override
+    public void onGamePaused() {
+        Log.i(TAG, "on game paused and stop recogniztion");
+    }
+
+    @Override
+    public void onGameOver() {
+
+    }
+
+    @Override
+    public void onHandleP1SpeechResult(final SpecResult specResult) {
+        if (specResult != null) {
+            if (specResult.resultTimestamp - lastRecognizeTimestamp > 200) {
+                lastRecognizeTimestamp = specResult.resultTimestamp;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        speechResult.setText("Energy:" + specResult.energy);
+                        if (specResult.energy < 50) {
+                            // 能量低于50，不发射子弹
+                            speechResult.setTextColor(Color.GREEN);
+                            gameView.getCombatAircraft().setFiring(false);
+                        } else if (specResult.energy < 70) {
+                            gameView.getCombatAircraft().setSingle(true);
+                            gameView.getCombatAircraft().setFiring(true);
+                        } else if (specResult.energy < 85) {
+                            speechResult.setTextColor(Color.YELLOW);
+                            gameView.getCombatAircraft().setSingle(false);
+                            gameView.getCombatAircraft().setFiring(true);
+                        } else {
+                            speechResult.setTextColor(Color.RED);
+                            gameView.getCombatAircraft().bomb(gameView);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
+    public void onHandleP2SpeechResult(String s) {
+
     }
 }

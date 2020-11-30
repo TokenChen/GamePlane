@@ -13,12 +13,11 @@ import java.util.List;
  */
 public class CombatAircraft extends Sprite {
     private boolean collide = false;//标识战斗机是否被击中
-    private int bombAwardCount = 0;//可使用的炸弹数
+    private int bombAwardCount = 100;//可使用的炸弹数
 
     //双发子弹相关
     private boolean single = true;//标识是否发的是单一的子弹
-    private int doubleTime = 0;//当前已经用双子弹绘制的次数
-    private int maxDoubleTime = 140;//使用双子弹最多绘制的次数
+    private boolean firing = false; // 标识是否正在发射子弹
 
     //被撞击后闪烁相关
     private long beginFlushFrame = 0;//要在第beginFlushFrame帧开始闪烁战斗机
@@ -37,7 +36,7 @@ public class CombatAircraft extends Sprite {
             validatePosition(canvas);
 
             //每隔7帧发射子弹
-            if(getFrame() % 7 == 0){
+            if(getFrame() % 7 == 0 && firing){
                 fight(gameView);
             }
         }
@@ -93,11 +92,6 @@ public class CombatAircraft extends Sprite {
             rightBlueBullet.moveTo(rightX, y);
             gameView.addSprite(rightBlueBullet);
 
-            doubleTime++;
-            if(doubleTime >= maxDoubleTime){
-                single = true;
-                doubleTime = 0;
-            }
         }
     }
 
@@ -162,7 +156,6 @@ public class CombatAircraft extends Sprite {
                 if(p != null){
                     bulletAward.destroy();
                     single = false;
-                    doubleTime = 0;
                 }
             }
         }
@@ -208,5 +201,17 @@ public class CombatAircraft extends Sprite {
 
     public void setNotCollide(){
         collide = false;
+    }
+
+    /**
+     * 设置是否双发子弹
+     * @param single
+     */
+    public void setSingle(boolean single) {
+        this.single = single;
+    }
+
+    public void setFiring(boolean firing) {
+        this.firing = firing;
     }
 }

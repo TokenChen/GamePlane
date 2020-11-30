@@ -10,9 +10,11 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.ispring.gameplane.GameViewStateMonitor;
 import com.ispring.gameplane.R;
 
 import java.util.ArrayList;
@@ -27,6 +29,9 @@ public class GameView extends View {
     private CombatAircraft combatAircraft = null;
     private List<Sprite> sprites = new ArrayList<Sprite>();
     private List<Sprite> spritesNeedAdded = new ArrayList<Sprite>();
+    private GameViewStateMonitor gameViewStateMonitor;
+    // 创建敌机的时间间隔
+    private static final int CREATE_SPRITE_FRAMES = 30;
     //0:combatAircraft
     //1:explosion
     //2:yellowBullet
@@ -111,8 +116,28 @@ public class GameView extends View {
     private void startWhenBitmapsReady(){
         combatAircraft = new CombatAircraft(bitmaps.get(0));
         //将游戏设置为开始状态
-        status = STATUS_GAME_STARTED;
+        updateGameStatus(STATUS_GAME_STARTED);
         postInvalidate();
+    }
+
+    private void updateGameStatus(int gameStatus) {
+        status = gameStatus;
+        if (gameViewStateMonitor != null) {
+            switch (status) {
+                case STATUS_GAME_STARTED:
+                    gameViewStateMonitor.onGameStarted();
+                    break;
+                case STATUS_GAME_PAUSED:
+                    gameViewStateMonitor.onGamePaused();
+                    break;
+                case STATUS_GAME_DESTROYED:
+                case STATUS_GAME_OVER:
+                    gameViewStateMonitor.onGameOver();
+                    break;
+                default:
+                    Log.i("gameview", "gameview unknown status:" + status);
+            }
+        }
     }
     
     private void restart(){
@@ -122,12 +147,12 @@ public class GameView extends View {
 
     public void pause(){
         //将游戏设置为暂停状态
-        status = STATUS_GAME_PAUSED;
+        updateGameStatus(STATUS_GAME_PAUSED);
     }
 
     private void resume(){
         //将游戏设置为运行状态
-        status = STATUS_GAME_STARTED;
+        updateGameStatus(STATUS_GAME_STARTED);
         postInvalidate();
     }
 
@@ -181,7 +206,7 @@ public class GameView extends View {
         removeDestroyedSprites();
 
         //每隔30帧随机添加Sprite
-        if(frame % 30 == 0){
+        if(frame % CREATE_SPRITE_FRAMES == 0){
             createRandomSprites(canvas.getWidth());
         }
         frame++;
@@ -203,12 +228,16 @@ public class GameView extends View {
             }
         }
 
+        int bottomEnemyPlaneX = getBottomEnemyPlaneX();
+        if (bottomEnemyPlaneX > 0) {
+            combatAircraft.setX(getBottomEnemyPlaneX());
+        }
         if(combatAircraft != null){
             //最后绘制战斗机
             combatAircraft.draw(canvas, paint, this);
             if(combatAircraft.isDestroyed()){
                 //如果战斗机被击中销毁了，那么游戏结束
-                status = STATUS_GAME_OVER;
+                updateGameStatus(STATUS_GAME_OVER);
             }
             //通过调用postInvalidate()方法使得View持续渲染，实现动态效果
             postInvalidate();
@@ -383,21 +412,10 @@ public class GameView extends View {
         Sprite sprite = null;
         int speed = 2;
         //callTime表示createRandomSprites方法被调用的次数
-        int callTime = Math.round(frame / 30);
-        if((callTime + 1) % 25 == 0){
-            //发送道具奖品
-            if((callTime + 1) % 50 == 0){
-                //发送炸弹
-                sprite = new BombAward(bitmaps.get(7));
-            }
-            else{
-                //发送双子弹
-                sprite = new BulletAward(bitmaps.get(8));
-            }
-        }
-        else{
+        int callTime = Math.round(frame / CREATE_SPRITE_FRAMES);
+        if((callTime + 1) % 8 == 0){
             //发送敌机
-            int[] nums = {0,0,0,0,0,1,0,0,1,0,0,0,0,1,1,1,1,1,1,2};
+            int[] nums = {1,1,0,1,0,1,1,0,1,0,0,0,0,1,1,2,1,2,1,2};
             int index = (int)Math.floor(nums.length*Math.random());
             int type = nums[index];
             if(type == 0){
@@ -412,11 +430,6 @@ public class GameView extends View {
                 //大敌机
                 sprite = new BigEnemyPlane(bitmaps.get(6));
             }
-            if(type != 2){
-                if(Math.random() < 0.33){
-                    speed = 4;
-                }
-            }
         }
 
         if(sprite != null){
@@ -426,10 +439,6 @@ public class GameView extends View {
             float y = -spriteHeight;
             sprite.setX(x);
             sprite.setY(y);
-            if(sprite instanceof AutoSprite){
-                AutoSprite autoSprite = (AutoSprite)sprite;
-                autoSprite.setSpeed(speed);
-            }
             addSprite(sprite);
         }
     }
@@ -583,7 +592,7 @@ public class GameView extends View {
     
     private void destroyNotRecyleBitmaps(){
         //将游戏设置为销毁状态
-        status = STATUS_GAME_DESTROYED;
+        updateGameStatus(STATUS_GAME_DESTROYED);
 
         //重置frame
         frame = 0;
@@ -692,5 +701,31 @@ public class GameView extends View {
             }
         }
         return bullets;
+    }
+
+    /**
+     * 获取最底部的敌机位置，调整战斗机和敌机同轴，自动攻击
+     * @return
+     */
+    private int getBottomEnemyPlaneX() {
+        // 获取所有存活的敌机
+        List<EnemyPlane> sprints = getAliveEnemyPlanes();
+        EnemyPlane bottomEnmeyPlane = null;
+        if (sprints != null) {
+            for (EnemyPlane plane : sprints) {
+                if (bottomEnmeyPlane == null || bottomEnmeyPlane.getY() < plane.getY()) {
+                    bottomEnmeyPlane = plane;
+                }
+            }
+        }
+        return bottomEnmeyPlane == null ? -1 : (int) bottomEnmeyPlane.getX();
+    }
+
+    public void setGameViewStateMonitor(GameViewStateMonitor gameViewStateMonitor) {
+        this.gameViewStateMonitor = gameViewStateMonitor;
+    }
+
+    public CombatAircraft getCombatAircraft() {
+        return combatAircraft;
     }
 }
