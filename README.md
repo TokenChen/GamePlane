@@ -9,9 +9,9 @@
  2. 初始炸弹无限（TODO：后面随着级别升高，大飞机逐渐增加，炸弹数量逐渐减少）
  2. 不同的敌机抗击打能力不同，当敌机被击中一定子弹数量时会爆炸，爆炸有动画效果
 
- ![这里写图片描述](https://github.com/iSpring/GamePlane/blob/master/game.png)
+ ![效果图](https://github.com/TokenChen/GamePlane/blob/master/doc/gameplane.png)
 
- ![这里写图片描述](https://github.com/iSpring/GamePlane/blob/master/screenshot.gif)
+ ![效果视频](https://github.com/TokenChen/GamePlane/blob/master/doc/plane.gif)
 
 
 实现
