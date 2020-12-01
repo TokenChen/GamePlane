@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
 
     defaultConfig {
-        applicationId "com.ispring.gameplane"
+        applicationId "com.baidu.sample.gameplane"
         minSdkVersion 22
         targetSdkVersion 26
         versionCode 1
