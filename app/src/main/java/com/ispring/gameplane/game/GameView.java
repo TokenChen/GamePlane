@@ -230,7 +230,7 @@ public class GameView extends View {
 
         int bottomEnemyPlaneX = getBottomEnemyPlaneX();
         if (bottomEnemyPlaneX > 0) {
-            combatAircraft.setX(getBottomEnemyPlaneX());
+            combatAircraft.setX(bottomEnemyPlaneX - 5);
         }
         if(combatAircraft != null){
             //最后绘制战斗机
@@ -409,38 +409,45 @@ public class GameView extends View {
 
     //生成随机的Sprite
     private void createRandomSprites(int canvasWidth){
-        Sprite sprite = null;
-        int speed = 2;
+        List<Sprite> sprites = new ArrayList<>();
         //callTime表示createRandomSprites方法被调用的次数
         int callTime = Math.round(frame / CREATE_SPRITE_FRAMES);
+        if (callTime % 7 != 0) {
+            return;
+        }
+        int randomforPlane = (int) (Math.random() * 1000);
+        if (randomforPlane + callTime < 500) {
+            sprites.add(new SmallEnemyPlane(bitmaps.get(4)));
+        } else if (randomforPlane + callTime < 780) {
+            sprites.add(new MiddleEnemyPlane(bitmaps.get(5)));
+        } else {
+            sprites.add(new BigEnemyPlane(bitmaps.get(6)));
+        }
+        Log.i("gameplaneaa", "calltime:" + callTime + "  randomforPlane:" + randomforPlane);
+        if (callTime % 5 == 0) {
+            sprites.add(new SmallEnemyPlane(bitmaps.get(4)));
+        }
         if((callTime + 1) % 8 == 0){
-            //发送敌机
-            int[] nums = {1,1,0,1,0,1,1,0,1,0,0,0,0,1,1,2,1,2,1,2};
-            int index = (int)Math.floor(nums.length*Math.random());
-            int type = nums[index];
-            if(type == 0){
-                //小敌机
-                sprite = new SmallEnemyPlane(bitmaps.get(4));
-            }
-            else if(type == 1){
-                //中敌机
-                sprite = new MiddleEnemyPlane(bitmaps.get(5));
-            }
-            else if(type == 2){
-                //大敌机
-                sprite = new BigEnemyPlane(bitmaps.get(6));
+            sprites.add(new MiddleEnemyPlane(bitmaps.get(5)));
+        }
+        if((callTime + 1) % 16  == 0){
+            sprites.add(new BigEnemyPlane(bitmaps.get(5)));
+        }
+        List<Float> sprintXs = new ArrayList<>(sprites.size());
+        for (Sprite sprite : sprites) {
+            if(sprite != null){
+                float spriteWidth = sprite.getWidth();
+                float spriteHeight = sprite.getHeight();
+                float x = (float)((canvasWidth - spriteWidth)*Math.random());
+                sprintXs.add(x);
+                float y = -spriteHeight;
+                sprite.setX(x);
+                sprite.setY(y);
+                addSprite(sprite);
             }
         }
+        Log.i("gameplaneaa", "sprites size:" + sprites.size() + "  needtobeadded:" + spritesNeedAdded.size());
 
-        if(sprite != null){
-            float spriteWidth = sprite.getWidth();
-            float spriteHeight = sprite.getHeight();
-            float x = (float)((canvasWidth - spriteWidth)*Math.random());
-            float y = -spriteHeight;
-            sprite.setX(x);
-            sprite.setY(y);
-            addSprite(sprite);
-        }
     }
 
     /*-------------------------------touch------------------------------------*/
