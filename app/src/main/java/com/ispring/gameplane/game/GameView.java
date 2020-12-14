@@ -8,6 +8,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -30,6 +32,24 @@ public class GameView extends View {
     private List<Sprite> sprites = new ArrayList<Sprite>();
     private List<Sprite> spritesNeedAdded = new ArrayList<Sprite>();
     private GameViewStateMonitor gameViewStateMonitor;
+    private static final int NORMAL_WARNING_SWITCH_MILLIONSECONDS = 400;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable updateToWarningBg = new Runnable() {
+        @Override
+        public void run() {
+            setBackgroundResource(R.drawable.warning_bg);
+            mainHandler.removeCallbacksAndMessages(null);
+            mainHandler.postDelayed(updateToNormalBg, NORMAL_WARNING_SWITCH_MILLIONSECONDS);
+        }
+    };
+    private final Runnable updateToNormalBg = new Runnable() {
+        @Override
+        public void run() {
+            setBackgroundResource(R.drawable.bg);
+            mainHandler.removeCallbacksAndMessages(null);
+            mainHandler.postDelayed(updateToWarningBg, NORMAL_WARNING_SWITCH_MILLIONSECONDS);
+        }
+    };
     // 创建敌机的时间间隔
     private static final int CREATE_SPRITE_FRAMES = 30;
     //0:combatAircraft
@@ -50,6 +70,7 @@ public class GameView extends View {
     public static final int STATUS_GAME_PAUSED = 2;//游戏暂停
     public static final int STATUS_GAME_OVER = 3;//游戏结束
     public static final int STATUS_GAME_DESTROYED = 4;//游戏销毁
+    public static final int STATUS_WARNING_BOMB = 5;//爆炸预警
     private int status = STATUS_GAME_DESTROYED;//初始为销毁状态
     private long frame = 0;//总共绘制的帧数
     private long score = 0;//总得分
@@ -120,7 +141,7 @@ public class GameView extends View {
         postInvalidate();
     }
 
-    private void updateGameStatus(int gameStatus) {
+    public void updateGameStatus(int gameStatus) {
         status = gameStatus;
         if (gameViewStateMonitor != null) {
             switch (status) {
@@ -178,11 +199,14 @@ public class GameView extends View {
             drawGamePaused(canvas);
         }else if(status == STATUS_GAME_OVER){
             drawGameOver(canvas);
+        } else if (status == STATUS_WARNING_BOMB) {
+            drawGameWaitingBomb(canvas);
         }
     }
 
     //绘制运行状态的游戏
     private void drawGameStarted(Canvas canvas){
+        mainHandler.removeCallbacksAndMessages(null);
 
         drawScoreAndBombs(canvas);
 
@@ -228,9 +252,9 @@ public class GameView extends View {
             }
         }
 
-        int bottomEnemyPlaneX = getBottomEnemyPlaneX();
-        if (bottomEnemyPlaneX > 0) {
-            combatAircraft.setX(bottomEnemyPlaneX - 5);
+        int bottomEnemyPlaneMiddleX = getBottomEnemyPlaneMiddleX();
+        if (bottomEnemyPlaneMiddleX > 0) {
+            combatAircraft.setX(bottomEnemyPlaneMiddleX - combatAircraft.getWidth() / 2);
         }
         if(combatAircraft != null){
             //最后绘制战斗机
@@ -240,6 +264,25 @@ public class GameView extends View {
                 updateGameStatus(STATUS_GAME_OVER);
             }
             //通过调用postInvalidate()方法使得View持续渲染，实现动态效果
+            postInvalidate();
+        }
+    }
+
+    //绘制等待爆炸状态的游戏
+    private void drawGameWaitingBomb(Canvas canvas){
+        drawScoreAndBombs(canvas);
+
+        //调用Sprite的onDraw方法，而非draw方法，这样就能渲染静态的Sprite，而不让Sprite改变位置
+        for(Sprite s : sprites){
+            s.onDraw(canvas, paint, this);
+        }
+        if(combatAircraft != null){
+            combatAircraft.onDraw(canvas, paint, this);
+        }
+        setBackgroundResource(R.drawable.warning_bg);
+        mainHandler.removeCallbacksAndMessages(null);
+        mainHandler.postDelayed(updateToNormalBg, NORMAL_WARNING_SWITCH_MILLIONSECONDS);
+        if(lastSingleClickTime > 0){
             postInvalidate();
         }
     }
@@ -714,7 +757,7 @@ public class GameView extends View {
      * 获取最底部的敌机位置，调整战斗机和敌机同轴，自动攻击
      * @return
      */
-    private int getBottomEnemyPlaneX() {
+    private int getBottomEnemyPlaneMiddleX() {
         // 获取所有存活的敌机
         List<EnemyPlane> sprints = getAliveEnemyPlanes();
         EnemyPlane bottomEnmeyPlane = null;
@@ -725,7 +768,7 @@ public class GameView extends View {
                 }
             }
         }
-        return bottomEnmeyPlane == null ? -1 : (int) bottomEnmeyPlane.getX();
+        return bottomEnmeyPlane == null ? -1 : (int) ((int) bottomEnmeyPlane.getX() + bottomEnmeyPlane.getWidth() / 2);
     }
 
     public void setGameViewStateMonitor(GameViewStateMonitor gameViewStateMonitor) {
@@ -735,4 +778,13 @@ public class GameView extends View {
     public CombatAircraft getCombatAircraft() {
         return combatAircraft;
     }
+
+    public void fireBomb() {
+        if (combatAircraft != null) {
+            combatAircraft.bomb(this);
+            updateGameStatus(STATUS_GAME_STARTED);
+        }
+    }
+
+
 }
