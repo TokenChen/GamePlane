@@ -11,14 +11,18 @@ import com.baidu.duer.botvoiceapi.BotSpeechRecog;
 import com.baidu.duer.botvoiceapi.ISpeechTranscriberResultListener;
 import com.baidu.duer.speech.soundspec.SpecResult;
 import com.ispring.gameplane.game.GameView;
+import com.ispring.gameplane.game.Size;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
-public class GameActivity extends Activity implements GameViewStateMonitor, ISpeechTranscriberResultListener {
+public class GameActivity extends Activity implements GameViewStateMonitor,
+        ISpeechTranscriberResultListener {
 
-    private static final int NONE_BULLET = 60;
-    private static final int SINGLE_BULLET = 80;
-    private static final int DOUBLE_BULLET = 95;
-    private static final int BOMB_BULLET = 99;
+    private static final int NONE_BULLET = 65;
+    private static final int SINGLE_BULLET = 78;
+    private static final int DOUBLE_BULLET = 91;
     private GameView gameView;
     public static final String TAG = "GameActivity";
     private TextView speechResult;
@@ -67,21 +71,20 @@ public class GameActivity extends Activity implements GameViewStateMonitor, ISpe
         //9:pause1
         //10:pause2
         //11:bomb
-        int[] bitmapIds = {
-                R.drawable.plane,
-                R.drawable.explosion,
-                R.drawable.yellow_bullet,
-                R.drawable.blue_bullet,
-                R.drawable.small,
-                R.drawable.middle,
-                R.drawable.big,
-                R.drawable.bomb_award,
-                R.drawable.bullet_award,
-                R.drawable.pause1,
-                R.drawable.pause2,
-                R.drawable.bomb
-        };
-        gameView.start(bitmapIds);
+        Map<Integer, Size> bitmaps = new HashMap<>();
+        bitmaps.put(R.drawable.plane, new Size(70, 66));
+        bitmaps.put(R.drawable.explosion, new Size(896, 64));
+        bitmaps.put(R.drawable.yellow_bullet, new Size(8, 20));
+        bitmaps.put(R.drawable.blue_bullet, new Size(8, 20));
+        bitmaps.put(R.drawable.small, new Size(42, 33));
+        bitmaps.put(R.drawable.middle, new Size(48, 59));
+        bitmaps.put(R.drawable.big, new Size(82, 104));
+        bitmaps.put(R.drawable.bomb_award, new Size(37, 48));
+        bitmaps.put(R.drawable.bullet_award, new Size(37, 58));
+        bitmaps.put(R.drawable.pause1, new Size(30, 30));
+        bitmaps.put(R.drawable.pause2, new Size(30, 30));
+        bitmaps.put(R.drawable.bomb, new Size(42, 45));
+        gameView.start(bitmaps);
     }
 
     @Override
@@ -156,10 +159,10 @@ public class GameActivity extends Activity implements GameViewStateMonitor, ISpe
                             // 能量低于50，不发射子弹
                             speechResult.setTextColor(Color.GREEN);
                             gameView.getCombatAircraft().setFiring(false);
-                        } else if (specResult.energy < DOUBLE_BULLET) {
+                        } else if (specResult.energy < SINGLE_BULLET) {
                             gameView.getCombatAircraft().setSingle(true);
                             gameView.getCombatAircraft().setFiring(true);
-                        } else if (specResult.energy < BOMB_BULLET) {
+                        } else if (specResult.energy < DOUBLE_BULLET) {
                             speechResult.setTextColor(Color.YELLOW);
                             gameView.getCombatAircraft().setSingle(false);
                             gameView.getCombatAircraft().setFiring(true);
@@ -175,7 +178,7 @@ public class GameActivity extends Activity implements GameViewStateMonitor, ISpe
 
     private void triggerBomb() {
         if (!isWaitingBomb) {
-            mainHandler.postDelayed(fireBomb, 3000);
+            mainHandler.postDelayed(fireBomb, 1000);
             gameView.updateGameStatus(GameView.STATUS_WARNING_BOMB);
             isWaitingBomb = true;
         }
@@ -186,9 +189,9 @@ public class GameActivity extends Activity implements GameViewStateMonitor, ISpe
     }
 
     private void resetWaitingBomb(double speechEnergy) {
-        if (speechEnergy < BOMB_BULLET && isWaitingBomb && !isResetting) {
+        if (speechEnergy < DOUBLE_BULLET && isWaitingBomb && !isResetting) {
             // 如果当前正在等待爆炸，并且未取消中，并且能量小于炸弹能量，发送一个取消任务
-            mainHandler.postDelayed(resetWaitingBomb, 1000);
+            mainHandler.postDelayed(resetWaitingBomb, 500);
             isResetting = true;
         }
     }
