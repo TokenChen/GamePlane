@@ -353,7 +353,7 @@ public class GameView extends View {
         canvas.translate(w1, h1);
         //绘制背景色
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0xFFD7DDDE);
+        paint.setColor(0xFF7B68EE);
         Rect rect1 = new Rect(0, 0, w2, canvasHeight - 2 * h1);
         canvas.drawRect(rect1, paint);
         //绘制边框
