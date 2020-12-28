@@ -10,10 +10,19 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    signingConfigs {
+        botsdkDemoConfig {
+            keyAlias 'key0'
+            keyPassword 'chenzhentao2011'
+            storeFile file('android_demo_chenzhentao.jks')
+            storePassword 'chenzhentao2011'
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.botsdkDemoConfig
         }
     }
 }
@@ -22,6 +31,6 @@ dependencies {
     implementation 'com.android.support:localbroadcastmanager:28.0.0'
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    implementation 'com.baidu.duer.botvoiceapi:bot-voice-api:0.2'
+    implementation 'com.baidu.duer.botvoiceapi:bot-voice-api:0.5'
     implementation 'com.baidu.duer.botsdk:bot-sdk-android:1.45.0'
 }

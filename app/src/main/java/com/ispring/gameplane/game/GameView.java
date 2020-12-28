@@ -120,7 +120,7 @@ public class GameView extends View {
         paint.setStyle(Paint.Style.FILL);
         //设置textPaint，设置为抗锯齿，且是粗体
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.FAKE_BOLD_TEXT_FLAG);
-        textPaint.setColor(0xff000000);
+        textPaint.setColor(0xffFFFFFF);
         fontSize = textPaint.getTextSize();
         fontSize *= density;
         fontSize2 *= density;

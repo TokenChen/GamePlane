@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class CombatAircraft extends Sprite {
     private boolean collide = false;//标识战斗机是否被击中
-    private int bombAwardCount = 100;//可使用的炸弹数
+    private int bombAwardCount = 5;//可使用的炸弹数
 
     //双发子弹相关
     private boolean single = true;//标识是否发的是单一的子弹
