@@ -7,8 +7,8 @@ android {
         applicationId "com.baidu.sample.gameplane"
         minSdkVersion 22
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
     }
     signingConfigs {
         botsdkDemoConfig {
